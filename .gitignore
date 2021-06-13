@@ -8,7 +8,6 @@
 environment/environment.production.ts
 environment/environment.nightly.ts
 environment/environment.dev.ts
-environment/environment.ts
 
 # Server dependencies
 services/badge/icon/icons

@@ -1,6 +1,7 @@
 
 # General ignored
 .vscode/*
+docker-compose.yml
 
 # Server source
 .deno_plugins/*

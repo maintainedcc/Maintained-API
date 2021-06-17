@@ -1,9 +1,7 @@
 
 import {
   config,
-  MongoClient, 
-  Database, 
-  Collection 
+  MongoClient
 } from "../deps.ts";
 import {
   Badge,
@@ -24,17 +22,17 @@ interface Project {
 }
 
 export class DataService {
-  private db: Database;
-  private dUsers: Collection<User>;
+  private db: any; // Database
+  private dUsers: any; // Collection<User>
 
   constructor() {
     const client = new MongoClient();
-    client.connectWithUri("mongodb://localhost:27017");
+    client.connect("mongodb://localhost:27017");
 
     this.db = client.database(config.database_name);
-    this.dUsers = this.db.collection<User>("users");
+    this.dUsers = this.db.collection("users");
 
-    this.dUsers.count().then(num => {
+    this.dUsers.count().then((num: number) => {
       console.log(`Loaded DB with ${num} users.`);
     });
   }
@@ -89,7 +87,7 @@ export class DataService {
   // Create a new default badge in a user's project and return it
   async createBadge(uId: string, project: string): Promise<Badge | undefined> {
     const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
-    const userProj = userData?.find(p => p.title === project);
+    const userProj = userData?.find((p: Project) => p.title === project);
     if (!userProj) return undefined;
 
     const lastId = userProj.badges[userProj.badges.length - 1]?.id;
@@ -118,10 +116,10 @@ export class DataService {
   // Delete a badge in a user's project from badge ID
   async deleteBadge(uId: string, project: string, bId: number): Promise<void> {
     const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
-    const userProj = userData?.find(p => p.title === project);
+    const userProj = userData?.find((p: Project) => p.title === project);
     if (!userProj) return;
 
-    const badgeIndex = userProj.badges.findIndex(b => b.id === bId);
+    const badgeIndex = userProj.badges.findIndex((b: Badge) => b.id === bId);
     userProj.badges.splice(badgeIndex, 1);
     await this.dUsers.updateOne(
       { name: uId }, 
@@ -131,10 +129,10 @@ export class DataService {
   // Get a badge based on username, project, and badge ID
   async getBadge(uId: string, project: string, bId: number): Promise<Badge | undefined> {
     const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
-    const userProj = userData?.find(p => p.title === project);
+    const userProj = userData?.find((p: Project) => p.title === project);
     if (!userProj) return undefined;
 
-    const userBadge = userProj.badges.find(b => b.id === bId);
+    const userBadge = userProj.badges.find((b: Badge) => b.id === bId);
     if (!userBadge) return undefined;
     else return userBadge;
   }
@@ -142,10 +140,10 @@ export class DataService {
   // Updates all properties of a badge given username, project, and badge
   async updateBadge(uId: string, project: string, badge: Badge): Promise<Badge | undefined> {
     const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
-    const userProj = userData?.find(p => p.title === project);
+    const userProj = userData?.find((p: Project) => p.title === project);
     if (!userProj) return undefined;
 
-    const userBadge = userProj.badges.find(b => b.id === badge.id);
+    const userBadge = userProj.badges.find((b: Badge) => b.id === badge.id);
     if (!userBadge) return undefined;
 
     // Explicitly set values to make sure vital info like
@@ -168,7 +166,7 @@ export class DataService {
     if (!user || !project) return undefined;
 
     project = project.replaceAll(" ", "-").replaceAll("/", "-");
-    if (user.projects.find(p => p.title === project)) return undefined;
+    if (user.projects.find((p: Project) => p.title === project)) return undefined;
 
     const newBadge: Badge = {
       id: 1,
@@ -190,7 +188,7 @@ export class DataService {
     }
 
     user.projects.push(newProject);
-    user.projects.sort((a, b) => 
+    user.projects.sort((a: Project, b: Project) => 
       ('' + a.title).localeCompare(b.title));
     await this.dUsers.updateOne(
       { name: uId }, 
@@ -203,7 +201,7 @@ export class DataService {
     const user = await this.dUsers.findOne({ name: uId });
     if (!user || !project) return;
 
-    const projectIndex = user.projects.findIndex(p => p.title === project);
+    const projectIndex = user.projects.findIndex((p: Project) => p.title === project);
     user.projects.splice(projectIndex, 1);
     await this.dUsers.updateOne(
       { name: uId }, 

@@ -27,14 +27,15 @@ export class DataService {
 
   constructor() {
     const client = new MongoClient();
-    client.connect("mongodb://localhost:27017");
-
-    this.db = client.database(config.database_name);
-    this.dUsers = this.db.collection("users");
-
-    this.dUsers.count().then((num: number) => {
-      console.log(`Loaded DB with ${num} users.`);
-    });
+  	client.connect(`mongodb://${config.database_user}:${config.database_pwd}@172.17.0.1:27017/?authSource=admin&readPreference=primary&ssl=false`)
+			.then(() => {
+				this.db = client.database(config.database_name);
+				this.dUsers = this.db.collection("users");
+		
+				this.dUsers.count().then((num: number) => {
+					console.log(`Loaded DB with ${num} users.`);
+				});
+			});
   }
 
   // Ensure a user exists

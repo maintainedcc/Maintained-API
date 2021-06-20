@@ -1,7 +1,9 @@
 
 import {
   config,
-  MongoClient
+  MongoClient,
+	Database,
+	Collection
 } from "../deps.ts";
 import {
   Badge,
@@ -22,16 +24,20 @@ interface Project {
 }
 
 export class DataService {
-  private db: any; // Database
-  private dUsers: any; // Collection<User>
+	// Assert non-null. Possible race condition, but unlikely because
+	// function calls are event-driven (non-issue after initialization).
+  private db!: Database;
+  private dUsers!: Collection<User>;
 
   constructor() {
     const client = new MongoClient();
-  	client.connect(`mongodb://${config.database_user}:${config.database_pwd}@172.17.0.1:27017/?authSource=admin&readPreference=primary&ssl=false`)
+		const mongoUser = `${config.database_user}:${config.database_pwd}`;
+		const mongoHost = `mongodb://${mongoUser}@172.17.0.1:27017`;
+  	client.connect(`${mongoHost}/?authSource=admin&readPreference=primary&ssl=false`)
 			.then(() => {
 				this.db = client.database(config.database_name);
 				this.dUsers = this.db.collection("users");
-		
+
 				this.dUsers.count().then((num: number) => {
 					console.log(`Loaded DB with ${num} users.`);
 				});

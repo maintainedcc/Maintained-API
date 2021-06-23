@@ -1,251 +1,156 @@
 
 import {
-  config,
-  exists, 
-  getCookies, 
-  serve 
+	config,
+	Application,
+	Router,
+	send
 } from "./deps.ts";
+import {
+	AuthService,
+	BadgeService,
+	DataService
+} from "./services/mod.ts";
+import {
+	Badge
+} from "./services/mod.defs.ts";
 
-import { 
-  AuthService, 
-  BadgeService, 
-  DataService
-} from './services/mod.ts';
+// Oak server + middleware
+const app = new Application();
+const exposed = new Router();
+const identity = new Router();
+const user = new Router();
 
-const s = serve({ port: config.port });
-console.log(`http://localhost:${config.port}/`);
-
+// Maintained services
 const auth = new AuthService();
 const badger = new BadgeService();
 const data = new DataService();
 
-for await (const req of s) {
-  // Separate query parameters
-  const route = req.url.split("?");
-  req.url = route[0];
-  const params = new URLSearchParams(route[1]);
+identity
+	.get("/oauth/callback", async ctx => {
+		const params = ctx.request.url.searchParams;
+		const code = params.get("code") ?? "";
+		const state = params.get("state") ?? "";
 
-  // Exposed routes
-  switch (req.url) {
-    case "/oauth/callback": (async () => {
-      const code = params.get("code") ?? "";
-      const state = params.get("state") ?? "";
+		if (!code || state != "pog")
+			ctx.throw(400);
 
-      if (!code || state != "pog") {
-        req.respond({ status: 400 });
-        return;
-      }
-      
-      const token = await auth.getAccessToken(code, state);
-      const uuid = await auth.authorizeToken(token);
-      await data.ensureUser(uuid);
+		const token = await auth.getAccessToken(code, state);
+		const uuid = await auth.authorizeToken(token);
+		await data.ensureUser(uuid);
 
-      req.respond({ 
-        status: 302, 
-        headers: new Headers({
-          "Set-Cookie": `token=${token}; Max-Age=864000; SameSite=Strict; Path=/;`,
-          "Location": "/dashboard"
-        })
-      });
-    })();
-    continue;
+		ctx.cookies.set("token", token, { maxAge: 864000, sameSite: "strict", path: "/" });
+		ctx.response.redirect("/dashboard");
+	})
+	.get("/oauth/login", ctx => {
+		const authed = auth.isAuthorized(ctx.cookies.get("token") ?? "");
+		if (ctx.cookies.get("token") && authed)
+			ctx.response.redirect("/dashboard");
+		else
+			ctx.response.redirect(auth.getAuthURL());
+	})
+	.get("/oauth/logout", ctx => {
+		ctx.cookies.set("token", "", { maxAge: 0 });
+		ctx.response.redirect("/");
+	})
+	.get("/oauth/manage", ctx => {
+		ctx.response.redirect(auth.getManagementURL());
+	});
 
-    case "/oauth/login": (async () => {
-      const cookies = getCookies(req);
-      if (cookies["token"] && auth.isAuthorized(cookies["token"])) {
-        req.respond({ 
-          status: 302, 
-          headers: new Headers({ "Location": "/dashboard" })
-        });
-      }
-      else {
-        req.respond({ 
-          status: 302, 
-          headers: new Headers({ "Location": auth.getAuthURL() })
-        });
-      }
-    })();
-    continue;
+exposed
+	.get("/:userId/:project/:badgeId", async ctx => {
+		const userId = ctx.params.userId ?? "";
+		const project = ctx.params.project ?? "";
+		const badgeId = ctx.params.badgeId ?? "";
+		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));
 
-    case "/oauth/logout": (async () => {
-      req.respond({
-        status: 302,
-        headers: new Headers({
-          "Set-Cookie": "token=; Path=/; Max-Age=0;",
-          "Location": "/" 
-        })
-      });
-    })();
-    continue;
+		if (badgeData) {
+			const badge = await badger.generate(badgeData);
+			ctx.response.body = badge;
+			ctx.response.headers.set("Cache-Control", "no-store");
+			ctx.response.type = "image/svg+xml";
+		}
+		else
+			ctx.throw(404);
+	})
+	.get("/:userId/:project/:badgeId/redirect", async ctx => {
+		ctx.response.redirect("redirect.html");
+	})
+	.get("/:userId/:project/:badgeId/json", async ctx => {
+		const userId = ctx.params.userId ?? "";
+		const project = ctx.params.project ?? "";
+		const badgeId = ctx.params.badgeId ?? "";
+		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));
 
-    case "/oauth/manage": (async () => {
-      req.respond({
-        status: 302,
-        headers: new Headers({ "Location": auth.getManagementURL() })
-      });
-    })();
-    continue;
-      
-    // Load the main file (Angular will sort routing)
-    case "/dashboard":
-      req.url = "index.html";
-      break;
+		if (badgeData) {
+			ctx.response.body = badgeData;
+			ctx.response.headers.set("Access-Control-Allow-Origin", "*");
+			ctx.response.headers.set("Cache-Control", "no-store");
+			ctx.response.type = "application/json";
+		}
+	});
 
-    // Alias for root (Angular app)
-    case "/start":
-      req.url = "index.html";
-      break;
+// Authentication middleware for API
+user.use(async (ctx, next) => {
+	const id = await auth.authorizeToken(ctx.cookies.get("token") ?? "");
+	const project = ctx.request.url.searchParams.get("project") ?? "";
+	const badgeId = ctx.request.url.searchParams.get("id") ?? "";
+	ctx.state = {
+		userId: id,
+		project: project,
+		badgeId: badgeId
+	};
+	await next();
+});
 
-    // Root start page
-    case "/":
-      req.url = "index.html";
-      break;
+user
+	.post("/api/badges/create", async ctx => {
+		const badge = await data.createBadge(ctx.state.userId, ctx.state.project);
+		if (!badge) ctx.throw(400);
+		else ctx.response.body = badge;
+	})
+	.post("/api/badges/update", async ctx => {
+		const badge = ctx.request.body({ type: "json" }) as unknown as Badge;
+		const upBadge = await data.updateBadge(ctx.state.userId, ctx.state.project, badge);
+		if (!upBadge) ctx.throw(400);
+		else ctx.response.body = upBadge;
+	})
+	.post("/api/badges/delete", async ctx => {
+		if (!ctx.state.project || !ctx.state.badgeId) ctx.throw(400);
+		await data.deleteBadge(ctx.state.userId, ctx.state.project, ctx.state.badgeId);
+		ctx.response.status = 204;
+	})
+	.post("/api/projects/create", async ctx => {
+		const project = await data.createProject(ctx.state.userId, ctx.state.project);
+		if (!project) ctx.throw(400);
+		ctx.response.body = JSON.stringify(project);
+	})
+	.post("/api/projects/delete", async ctx => {
+		if (!ctx.state.project) ctx.throw(400);
+		await data.deleteProject(ctx.state.userId, ctx.state.project);
+		ctx.response.status = 204;
+	})
+	.get("/api/user/data", async ctx => {
+		ctx.response.body = await data.getUserInfo(ctx.state.userId);
+	})
+	.post("/api/user/welcome", async ctx => {
+		await data.setUserWelcomed(ctx.state.userId);
+		ctx.response.status = 204;
+	});
 
-    default:
-      // Check if badge exists
-      const badgeParams = req.url.split("/");
-      if (badgeParams.length === 4) {
-        // Get, format, and return badge
-        const badgeData = await data.getBadge(badgeParams[1], badgeParams[2], parseInt(badgeParams[3]));
-        if (badgeData) {
-          const badge = await badger.generate(badgeData);
-          req.respond({ 
-            body: badge, 
-            status: 200,
-            headers: new Headers({
-              "Cache-Control": "no-store",
-              "Content-Type": "image/svg+xml"
-            }) 
-          });
-          continue;
-        }
-      }
-      // Try and get the link redirect page
-      else if (badgeParams.length === 5 && badgeParams[4] === "redirect") {
-        req.url = "redirect.html";
-      }
-      // Get and return raw badge JSON
-      else if (badgeParams.length === 5 && badgeParams[4] === "json") {
-        const badgeData = await data.getBadge(badgeParams[1], badgeParams[2], parseInt(badgeParams[3]));
-        if (badgeData) {
-          req.respond({
-            body: JSON.stringify(badgeData), 
-            status: 200, 
-            headers: new Headers({
-              "Access-Control-Allow-Origin": "*",
-              "Cache-Control": "no-store",
-              "Content-Type": "application/json"
-            })
-          });
-          continue;
-        }
-      }
-  }
+app.use(identity.routes());
+app.use(exposed.routes());
+app.use(user.routes());
 
-  // Serve /app folder files (exposed)
-  const serveURL = `app/${req.url}`;
-  if (await exists(serveURL)) {
-    let type = getMimeType(serveURL);
-    req.respond({ 
-      body: await Deno.readFile(serveURL), 
-      status: 200, 
-      headers: new Headers({ "Content-Type": type })
-    });
-    continue;
-  }
+app.use(identity.allowedMethods());
+app.use(exposed.allowedMethods());
+app.use(user.allowedMethods());
 
-  // Identity-locked routes
-  // It's possible to reject the user at this point
-  // because there is no more content to serve past this.
-  let id = await auth.authorizeToken(getCookies(req)["token"]);
-  if (!id) { req.respond({ status: 401 }); continue; }
-  switch (req.url) {
-    case "/api/badges/create": (async () => {
-      const p = { project: params.get("project") ?? "" }
-      const badge = await data.createBadge(id, p.project);
+app.use(async ctx => {
+	await send(ctx, ctx.request.url.pathname, {
+		root: `${Deno.cwd()}/app`,
+		index: "index.html"
+	});
+});
 
-      if (!badge) { req.respond({ status: 400 }); return }
-      req.respond({ body: JSON.stringify(badge), status: 200 });
-    })();
-    continue;
-
-    case "/api/badges/update": (async () => {
-      const p = { project: params.get("project") ?? "" };
-      const body = await Deno.readAll(req.body);
-      const badge = JSON.parse(new TextDecoder("utf8").decode(body));
-      const updBadge = await data.updateBadge(id, p.project, badge);
-      
-      if (!updBadge) { req.respond({ status: 400 }); return }
-      req.respond({ body: JSON.stringify(updBadge), status: 200 });
-    })();
-    continue;
-
-    case "/api/badges/delete": (async () => {
-      const p = {
-        project: params.get("project") ?? "",
-        bId: parseInt(params.get("id") ?? "")
-      }
-      if (!p.project || !p.bId) { req.respond({ status: 400 }); return }
-      await data.deleteBadge(id, p.project, p.bId);
-
-      req.respond({ status: 204 });
-    })();
-    continue;
-
-    case "/api/projects/create": (async () => {
-      const p = { project: params.get("project") ?? "" }
-      const project = await data.createProject(id, p.project);
-
-      if (!project) { req.respond({ status: 400 }); return }
-      req.respond({ body: JSON.stringify(project), status: 200 });
-    })();
-    continue;
-
-    case "/api/projects/delete": (async () => {
-      const p = { project: params.get("project") ?? "" }
-      if (!p.project) { req.respond({ status: 400 }); return }
-      await data.deleteProject(id, p.project);
-
-      req.respond({ status: 204 });
-    })();
-    continue;
-
-    case "/api/user/data": (async () => {
-      const userData = await data.getUserInfo(id);
-
-      req.respond({ body: JSON.stringify(userData), status: 200 });
-    })();
-    continue;
-
-    case "/api/user/welcome": (async () => {
-      await data.setUserWelcomed(id);
-
-      req.respond({ status: 204 });
-    })();
-    continue;
-  }
-
-  // Last-case 404 to terminate connection (performance)
-  // Happens only if all other blocks above fall through.
-  req.respond({ status: 404 });
-}
-
-function getMimeType(url: string): string {
-  const splitUrl = url.split('.');
-  switch (splitUrl[splitUrl.length - 1]) {
-    case "css":
-      return "text/css";
-    case "js":
-      return "text/javascript";
-    case "ico":
-      return "image/x-icon";
-    case "html":
-      return "text/html";
-    case "png":
-      return "image/png";
-    case "svg":
-      return "image/svg+xml";
-    default:
-      return "text/plain";
-  }
-}
+app.listen({ port: config.port });
+console.log(`Port: ${config.port}`);

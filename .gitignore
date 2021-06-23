@@ -12,3 +12,6 @@ environment/environment.dev.ts
 
 # Server dependencies
 services/badge/icon/icons
+
+# Artifacts (pulled by Docker)
+app/*

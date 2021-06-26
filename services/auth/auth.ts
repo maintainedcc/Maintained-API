@@ -1,5 +1,5 @@
 
-import { config } from '../../deps.ts';
+import { config, nanoid } from '../../deps.ts';
 import { AuthIdentityService } from './auth.identity.ts';
 
 export class AuthService {
@@ -10,28 +10,15 @@ export class AuthService {
 	}
 
 	// Wrapper on top of IdentityService function
-	isAuthorized(token: string): boolean {
-		return this.identity.isAuthorized(token);
+	isAuthorized(uuid: string): boolean {
+		return this.identity.isAuthorized(uuid);
 	}
 
-	// Authorize a token in the identity cache
-	// Returns a UUID based on input token
-	async authorizeToken(token: string): Promise<string> {
-		if (this.identity.isAuthorized(token))
-			return this.identity.getAuthorization(token);
-		else
-			return this.getUserUUID(token)
-			.then(uuid => {
-				this.identity.authorizeToken(token, uuid);
-				return uuid;
-			})
-			.catch(ex => {
-				throw new EvalError("Failed to auth token: " + ex);
-			});
+	getAuthorization(nid: string): string {
+		return this.identity.getAuthorization(nid);
 	}
 
-	// Get access token from oauth callback
-	async getAccessToken(code: string, state: string): Promise<string> {
+	async authorize(code: string, state: string): Promise<string> {
 		const url = "https://github.com/login/oauth/access_token";
 		const tokenParams: string[][] = [
 			["client_id", config.client_id],
@@ -42,12 +29,17 @@ export class AuthService {
 		const paramString = new URLSearchParams(tokenParams).toString();
 
 		const headers = new Headers({ "Accept": "application/json" });
-		return fetch(`${url}?${paramString}`, { method: "POST", headers: headers })
+		const token = await fetch(`${url}?${paramString}`, { method: "POST", headers: headers })
 			.then(res => res.text())
 			.then(res => JSON.parse(res)["access_token"])
 			.catch(ex => {
 				throw new EvalError("Failed to get token: " + ex);
 			});
+		
+		const uuid = await this.getUserUUID(token);
+		const nid = nanoid();
+		this.identity.authorizeNanoid(nid, uuid);
+		return nid;
 	}
 
 	// Get username from token and API call

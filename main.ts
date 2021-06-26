@@ -31,14 +31,13 @@ identity
 		const code = params.get("code") ?? "";
 		const state = params.get("state") ?? "";
 
-		if (!code || state != "pog")
-			ctx.throw(400);
+		if (!code || state != "pog") ctx.throw(400);
 
-		const token = await auth.getAccessToken(code, state);
-		const uuid = await auth.authorizeToken(token);
+		const nid = await auth.authorize(code, state);
+		const uuid = auth.getAuthorization(nid);
 		await data.ensureUser(uuid);
 
-		ctx.cookies.set("token", token, { maxAge: 864000, sameSite: "strict", path: "/" });
+		ctx.cookies.set("token", nid, { maxAge: 864000, sameSite: "strict", path: "/" });
 		ctx.response.redirect("/dashboard");
 	})
 	.get("/oauth/login", ctx => {
@@ -91,7 +90,7 @@ exposed
 
 // Authentication middleware for API
 user.use(async (ctx, next) => {
-	const id = await auth.authorizeToken(ctx.cookies.get("token") ?? "");
+	const id = auth.getAuthorization(ctx.cookies.get("token") ?? "");
 	const project = ctx.request.url.searchParams.get("project") ?? "";
 	const badgeId = ctx.request.url.searchParams.get("id") ?? "";
 	ctx.state = {

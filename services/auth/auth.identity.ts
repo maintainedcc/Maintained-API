@@ -14,32 +14,32 @@ export class AuthIdentityService {
 		this.users = {};
 	}
 
-	// Authorizes a token locally based on an API call
-	authorizeToken(token: string, user: string): void {
-		// 10 Minute Expiry
+	// Authorizes a client nanoid locally based on an API call
+	authorizeNanoid(nanoid: string, user: string): void {
+		// 14 Day Expiry
 		const newIdentifier: Identifier = {
 			userName: user,
-			expires: new Date(Date.now() + 600000)
+			expires: new Date(Date.now() + 14*24*60*60*1000)
 		};
-		this.users[token] = newIdentifier;
+		this.users[nanoid] = newIdentifier;
 	}
 
-	// Check if a token is authorized
-	isAuthorized(token: string): boolean {
-		if (this.users[token]?.expires.valueOf() > Date.now()) {
+	// Check if a nanoid is authorized
+	isAuthorized(nanoid: string): boolean {
+		if (this.users[nanoid]?.expires.valueOf() > Date.now()) {
 			return true;
 		}
 		else {
 			// Delete the auth if not authorized / expired
-			delete this.users[token];
+			delete this.users[nanoid];
 			return false;
 		}
 	}
 
-	// Gets username based on an authorized token
-	getAuthorization(token: string): string {
-		if (this.users[token])
-			return this.users[token].userName;
+	// Gets username based on an authorized nanoid
+	getAuthorization(nanoid: string): string {
+		if (this.users[nanoid])
+			return this.users[nanoid].userName;
 		else return "";
 	}
 }

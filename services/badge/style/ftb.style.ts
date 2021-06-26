@@ -1,7 +1,8 @@
 
 import type { BadgeField } from '../../mod.defs.ts';
+import { Template } from './template.ts';
 
-export const FTB = {
+export class FTB extends Template {
   field(field: BadgeField, color: string, iconURI: string|null = null, offset = 0, bold = false): string {
     // Text uppercase transform
     field.content = field.content.toUpperCase();
@@ -18,7 +19,11 @@ export const FTB = {
       <image x="${12 + offset}" y="7" height="14px" width="14px" href="${iconURI ?? ""}" />
       <text x="${x/2 + offset}" ${bold ? "font-weight=\"bold\"" : ""} letter-spacing="${kerning}px" y="22">${field.content}</text>
     </g>`;
-  },
+  }
+
+	fieldHTML(field: BadgeField, color: string, iconURI: string|null): string {
+		throw new Error("Method not implemented.");
+	}
 
   wrapper(internalContent: string, title: string, totalWidth: number): string {
     return `

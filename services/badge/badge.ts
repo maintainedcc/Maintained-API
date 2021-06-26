@@ -3,8 +3,9 @@ import { IconService } from "./icon/icon.ts";
 import { 
   Flat,
   FTB,
-  Plastic
-} from './style/style.ts';
+  Plastic,
+	Template
+} from './style/mod.ts';
 import { 
   Badge, 
   BadgeStyle, 
@@ -68,41 +69,26 @@ export class BadgeService {
     // Hex color string of partial
     const colorString = this.colorMap(field.color);
 
-    switch (style) {
-      case BadgeStyle.Plastic:
-        return {
-          content: Plastic.field(field, colorString, iconURI ?? null, offset),
-          title: field.content,
-          width: field.width
-        }
-      case BadgeStyle.Flat:
-        return {
-          content: Flat.field(field, colorString, iconURI ?? null, offset),
-          title: field.content,
-          width: field.width
-        }
-      case BadgeStyle.ForTheBadge:
-        return {
-          content: FTB.field(field, colorString, iconURI ?? null, offset, f.source ? true:false),
-          title: field.content,
-          width: field.width
-        }
-      default:
-        return { content: "", title: "", width: 0 };
-    }
+		let generator = this.getGenerator(style);
+		return {
+			content: generator.field(field, colorString, iconURI ?? null, offset, f.source ? true:false),
+			title: field.content,
+			width: field.width
+		}
   }
 
   private generateWrapper(style: BadgeStyle, innerContent: string, title: string, totalWidth: number): string {
-    switch (style) {
-      case BadgeStyle.Plastic:
-        return Plastic.wrapper(innerContent, title, totalWidth);
-      case BadgeStyle.Flat:
-        return Flat.wrapper(innerContent, title, totalWidth);
-      case BadgeStyle.ForTheBadge:
-        return FTB.wrapper(innerContent, title, totalWidth);
-      default: throw EvalError("generateWrapper: Invalid badge style.");
-    }
+		return this.getGenerator(style).wrapper(innerContent, title, totalWidth);
   }
+
+	private getGenerator(style: BadgeStyle): Template {
+    switch (style) {
+      case BadgeStyle.Plastic: return new Plastic();
+      case BadgeStyle.Flat: return new Flat();
+      case BadgeStyle.ForTheBadge: return new FTB();
+      default: throw EvalError(`Invalid badge style: ${style}`);
+    }
+	}
 
   private colorMap(color: BadgeColor): string {
     switch(color) {

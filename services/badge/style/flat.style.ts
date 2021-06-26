@@ -1,7 +1,8 @@
 
 import type { BadgeField } from '../../mod.defs.ts';
+import { Template } from './template.ts';
 
-export const Flat = {
+export class Flat extends Template {
   field(field: BadgeField, color: string, iconURI: string|null = null, offset = 0): string {
     // 20px padding
     field.width += 20;
@@ -15,7 +16,11 @@ export const Flat = {
       <text x="${x/2 + offset}" y="15" fill="#010101" fill-opacity=".3">${field.content}</text>
       <text x="${x/2 + offset}" y="14">${field.content}</text>
     </g>`;
-  },
+  }
+
+	fieldHTML(field: BadgeField, color: string, iconURI: string|null): string {
+		throw new Error("Method not implemented.");
+	}
 
   wrapper(internalContent: string, title: string, totalWidth: number): string {
     return `

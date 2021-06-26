@@ -1,5 +1,5 @@
 
-export { Flat } from './flat.style.ts';
-export { FTB } from './ftb.style.ts';
-export { Plastic } from './plastic.style.ts';
+export { Flat } from './style.flat.ts';
+export { FTB } from './style.ftb.ts';
+export { Plastic } from './style.plastic.ts';
 export { Template } from './template.ts';

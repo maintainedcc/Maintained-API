@@ -45,10 +45,10 @@ export class BadgeService {
 
 	private async generatePartial(field: BadgeField, style: BadgeStyle, offset = 0): Promise<BadgePartial> {
 		// Parse potential icon (:iconqualifier:)
-		let iconURI, iconMatch = field.content.toLowerCase().match(/^:([A-z]+):/);
+		let iconMatch = field.content.toLowerCase().match(/^:([A-z]+):/);
 		if (iconMatch) {
 			field.content = field.content.replace(iconMatch[0], "").trim();
-			iconURI = await this.iconService.getIconDataURL(iconMatch[1], true);
+			field.iconURI = await this.iconService.getIconDataURL(iconMatch[1], true);
 		}
 
 		// If Dynamic, get the DVS content
@@ -68,7 +68,7 @@ export class BadgeService {
 
 		let generator = this.getGenerator(style);
 		return {
-			content: generator.field(field, colorString, iconURI ?? null, offset, field.source ? true:false),
+			content: generator.field(field, colorString, offset, field.source ? true:false),
 			title: field.content,
 			width: field.width
 		}

@@ -52,16 +52,18 @@ export class DataService {
 		// Create default project and badges
 		const starterBadge: Badge = {
 			id: 1,
-			title: {
-				content: "Welcome to",
-				color: BadgeColor.Simple,
-				width: 90
-			},
-			values: [{
-				content: "Maintained",
-				color: BadgeColor.Savannah,
-				width: 90
-			}],
+			fields: [
+				{
+					content: "Welcome to",
+					color: BadgeColor.Simple,
+					width: 90
+				},
+				{
+					content: "Maintained",
+					color: BadgeColor.Savannah,
+					width: 90
+				}
+			],
 			style: BadgeStyle.Plastic
 		};
 		const starterProject: Project = {
@@ -100,16 +102,18 @@ export class DataService {
 		const lastId = userProj.badges[userProj.badges.length - 1]?.id;
 		const newBadge: Badge = {
 			id: (lastId ?? 0) + 1,
-			title: {
-				content: "New",
-				color: BadgeColor.Simple,
-				width: 35
-			},
-			values: [{
-				content: "Badge",
-				color: BadgeColor.Savannah,
-				width: 50
-			}],
+			fields: [
+				{
+					content: "New",
+					color: BadgeColor.Simple,
+					width: 35
+				},
+				{
+					content: "Badge",
+					color: BadgeColor.Savannah,
+					width: 50
+				}
+			],
 			style: BadgeStyle.Plastic
 		}
 
@@ -155,8 +159,7 @@ export class DataService {
 
 		// Explicitly set values to make sure vital info like
 		// badge ID, etc. does not get changed
-		userBadge.title = badge.title;
-		userBadge.values = badge.values;
+		userBadge.fields = badge.fields;
 		userBadge.style = badge.style;
 		userBadge.redirect = badge.redirect;
 
@@ -177,16 +180,18 @@ export class DataService {
 
 		const newBadge: Badge = {
 			id: 1,
-			title: {
-				content: "Created",
-				color: BadgeColor.Simple,
-				width: 50
-			},
-			values: [{
-				content: "Successfully",
-				color: BadgeColor.Savannah,
-				width: 90
-			}],
+			fields: [
+				{
+					content: "Created",
+					color: BadgeColor.Simple,
+					width: 50
+				},
+				{
+					content: "Successfully",
+					color: BadgeColor.Savannah,
+					width: 90
+				}
+			],
 			style: BadgeStyle.Plastic
 		}
 		const newProject: Project = {

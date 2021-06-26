@@ -4,9 +4,6 @@ import { BadgeColor } from "./mod.ts";
 export interface BadgeField {
 	content: string
 	color: BadgeColor
+	source?: string // DVS URL
 	width: number
-}
-
-export interface BadgeFieldDynamic extends BadgeField {
-	source?: string // Dynamic Value Sources URI
 }

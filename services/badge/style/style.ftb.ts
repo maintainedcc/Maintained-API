@@ -1,5 +1,5 @@
 
-import type { BadgeField } from '../../mod.defs.ts';
+import type { BadgeField } from '../../schema/mod.ts';
 import { Template } from './template.ts';
 
 export class FTB extends Template {

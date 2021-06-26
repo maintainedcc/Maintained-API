@@ -12,7 +12,7 @@ import {
   BadgeColor, 
   BadgeField,
   BadgeFieldDynamic
-} from "../mod.defs.ts";
+} from "../schema/mod.ts";
 
 interface BadgePartial {
   content: string // SVG or HTML string

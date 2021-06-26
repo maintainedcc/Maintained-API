@@ -1,5 +1,5 @@
 
-import { BadgeField } from "../../mod.defs.ts";
+import { BadgeField } from "../../schema/mod.ts";
 
 export abstract class Template {
 	abstract field(field: BadgeField, color: string, iconURI: string|null, offset: number, ... opts: any): string;

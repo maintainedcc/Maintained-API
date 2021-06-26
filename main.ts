@@ -12,7 +12,7 @@ import {
 } from "./services/mod.ts";
 import {
 	Badge
-} from "./services/mod.defs.ts";
+} from "./services/schema/mod.ts";
 
 // Oak server + middleware
 const app = new Application();

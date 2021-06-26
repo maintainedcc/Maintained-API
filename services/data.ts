@@ -9,7 +9,7 @@ import {
 	Badge,
 	BadgeColor,
 	BadgeStyle
-} from "./mod.defs.ts";
+} from "./schema/mod.ts";
 
 // Tightly-coupled interfaces
 // Do not need to export these

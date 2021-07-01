@@ -8,20 +8,11 @@ import {
 import {
 	Badge,
 	BadgeColor,
-	BadgeStyle
+	BadgeStyle,
+	User,
+	Project,
+	Team
 } from "./schema/mod.ts";
-
-// Tightly-coupled interfaces
-// Do not need to export these
-interface User {
-	name: string
-	firstTime: boolean
-	projects: Project[]
-}
-interface Project {
-	title: string
-	badges: Badge[]
-}
 
 export class DataService {
 	// Assert non-null. Possible race condition, but unlikely because

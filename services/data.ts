@@ -23,7 +23,7 @@ export class DataService {
 	constructor() {
 		const client = new MongoClient();
 		const mongoUser = `${config.database_user}:${config.database_pwd}`;
-		const mongoHost = `mongodb://${mongoUser}@172.17.0.1:27017`;
+		const mongoHost = `mongodb://${mongoUser}@${config.database_host}:27017`;
 		client.connect(`${mongoHost}/?authSource=admin&readPreference=primary&ssl=false`)
 			.then(() => {
 				this.db = client.database(config.database_name);

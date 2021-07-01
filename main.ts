@@ -16,16 +16,14 @@ import {
 
 // Oak server + middleware
 const app = new Application();
-const exposed = new Router();
-const identity = new Router();
-const user = new Router();
+const router = new Router();
 
 // Maintained services
 const auth = new AuthService();
 const badger = new BadgeService();
 const data = new DataService();
 
-identity
+router
 	.get("/oauth/callback", async ctx => {
 		const params = ctx.request.url.searchParams;
 		const code = params.get("code") ?? "";
@@ -53,9 +51,40 @@ identity
 	})
 	.get("/oauth/manage", ctx => {
 		ctx.response.redirect(auth.getManagementURL());
-	});
-
-exposed
+	})
+	.post("/api/badges/create", async ctx => {
+		const badge = await data.createBadge(ctx.state.userId, ctx.state.project);
+		if (!badge) ctx.throw(400);
+		else ctx.response.body = badge;
+	})
+	.post("/api/badges/update", async ctx => {
+		const badge = ctx.request.body({ type: "json" }) as unknown as Badge;
+		const upBadge = await data.updateBadge(ctx.state.userId, ctx.state.project, badge);
+		if (!upBadge) ctx.throw(400);
+		else ctx.response.body = upBadge;
+	})
+	.post("/api/badges/delete", async ctx => {
+		if (!ctx.state.project || !ctx.state.badgeId) ctx.throw(400);
+		await data.deleteBadge(ctx.state.userId, ctx.state.project, ctx.state.badgeId);
+		ctx.response.status = 204;
+	})
+	.post("/api/projects/create", async ctx => {
+		const project = await data.createProject(ctx.state.userId, ctx.state.project);
+		if (!project) ctx.throw(400);
+		ctx.response.body = JSON.stringify(project);
+	})
+	.post("/api/projects/delete", async ctx => {
+		if (!ctx.state.project) ctx.throw(400);
+		await data.deleteProject(ctx.state.userId, ctx.state.project);
+		ctx.response.status = 204;
+	})
+	.get("/api/user/data", async ctx => {
+		ctx.response.body = await data.getUserInfo(ctx.state.userId);
+	})
+	.post("/api/user/welcome", async ctx => {
+		await data.setUserWelcomed(ctx.state.userId);
+		ctx.response.status = 204;
+	})
 	.get("/:userId/:project/:badgeId", async ctx => {
 		const userId = ctx.params.userId ?? "";
 		const project = ctx.params.project ?? "";
@@ -89,7 +118,7 @@ exposed
 	});
 
 // Authentication middleware for API
-user.use(async (ctx, next) => {
+app.use(async (ctx, next) => {
 	const id = auth.getAuthorization(ctx.cookies.get("token") ?? "");
 	const project = ctx.request.url.searchParams.get("project") ?? "";
 	const badgeId = ctx.request.url.searchParams.get("id") ?? "";
@@ -101,48 +130,8 @@ user.use(async (ctx, next) => {
 	await next();
 });
 
-user
-	.post("/api/badges/create", async ctx => {
-		const badge = await data.createBadge(ctx.state.userId, ctx.state.project);
-		if (!badge) ctx.throw(400);
-		else ctx.response.body = badge;
-	})
-	.post("/api/badges/update", async ctx => {
-		const badge = ctx.request.body({ type: "json" }) as unknown as Badge;
-		const upBadge = await data.updateBadge(ctx.state.userId, ctx.state.project, badge);
-		if (!upBadge) ctx.throw(400);
-		else ctx.response.body = upBadge;
-	})
-	.post("/api/badges/delete", async ctx => {
-		if (!ctx.state.project || !ctx.state.badgeId) ctx.throw(400);
-		await data.deleteBadge(ctx.state.userId, ctx.state.project, ctx.state.badgeId);
-		ctx.response.status = 204;
-	})
-	.post("/api/projects/create", async ctx => {
-		const project = await data.createProject(ctx.state.userId, ctx.state.project);
-		if (!project) ctx.throw(400);
-		ctx.response.body = JSON.stringify(project);
-	})
-	.post("/api/projects/delete", async ctx => {
-		if (!ctx.state.project) ctx.throw(400);
-		await data.deleteProject(ctx.state.userId, ctx.state.project);
-		ctx.response.status = 204;
-	})
-	.get("/api/user/data", async ctx => {
-		ctx.response.body = await data.getUserInfo(ctx.state.userId);
-	})
-	.post("/api/user/welcome", async ctx => {
-		await data.setUserWelcomed(ctx.state.userId);
-		ctx.response.status = 204;
-	});
-
-app.use(identity.routes());
-app.use(exposed.routes());
-app.use(user.routes());
-
-app.use(identity.allowedMethods());
-app.use(exposed.allowedMethods());
-app.use(user.allowedMethods());
+app.use(router.allowedMethods());
+app.use(router.routes());
 
 app.use(async ctx => {
 	await send(ctx, ctx.request.url.pathname, {

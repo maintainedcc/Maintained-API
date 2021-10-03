@@ -11,7 +11,4 @@ export { crypto } from "https://deno.land/std@0.108.0/crypto/mod.ts";
 export { jwtVerify } from "https://deno.land/x/jose@v3.18.0/jwt/verify.ts";
 
 // Mongo (Database)
-export { MongoClient } from "https://deno.land/x/mongo@v0.23.1/mod.ts";
-// Typing workarounds since these aren't exposed in the main module
-export type { Collection } from "https://deno.land/x/mongo@v0.23.1/src/collection/mod.ts";
-export type { Database } from "https://deno.land/x/mongo@v0.23.1/src/database.ts";
+export { MongoClient, Collection, Database } from "https://deno.land/x/mongo@v0.27.0/mod.ts";

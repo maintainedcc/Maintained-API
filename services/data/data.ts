@@ -7,8 +7,6 @@ import {
 } from "../../deps.ts";
 import {
 	Badge,
-	BadgeColor,
-	BadgeStyle,
 	User,
 	Project,
 	Team
@@ -76,7 +74,7 @@ export class DataService {
 		await this.dUsers.updateOne(
 			{ name: uId }, 
 			{ $set: { projects: userData } });
-		return newBadge;
+		return nBadge;
 	}
 
 	// Delete a badge in a user's project from badge ID

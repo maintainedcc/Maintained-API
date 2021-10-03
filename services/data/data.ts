@@ -4,7 +4,7 @@ import {
 	MongoClient,
 	Database,
 	Collection
-} from "../deps.ts";
+} from "../../deps.ts";
 import {
 	Badge,
 	BadgeColor,
@@ -12,7 +12,11 @@ import {
 	User,
 	Project,
 	Team
-} from "./schema/mod.ts";
+} from "../schema/mod.ts";
+import {
+	newBadge,
+	generateNewUser
+} from "./defaults.ts";
 
 export class DataService {
 	// Assert non-null. Possible race condition, but unlikely because
@@ -39,35 +43,7 @@ export class DataService {
 	async ensureUser(uId: string): Promise<void> {
 		// Make sure the user doesn't exist already
 		if (await this.dUsers.findOne({ name: uId })) return;
-
-		// Create default project and badges
-		const starterBadge: Badge = {
-			id: 1,
-			fields: [
-				{
-					content: "Welcome to",
-					color: BadgeColor.Simple,
-					width: 90
-				},
-				{
-					content: "Maintained",
-					color: BadgeColor.Savannah,
-					width: 90
-				}
-			],
-			style: BadgeStyle.Plastic
-		};
-		const starterProject: Project = {
-			title: uId,
-			badges: [ starterBadge ]
-		};
-		const newUser: User = {
-			name: uId,
-			firstTime: true,
-			projects: [ starterProject ]
-		};
-
-		this.dUsers.insertOne(newUser);
+		else this.dUsers.insertOne(generateNewUser(uId));
 	}
 
 	// Returns all of a user's data
@@ -91,24 +67,12 @@ export class DataService {
 		if (!userProj) return undefined;
 
 		const lastId = userProj.badges[userProj.badges.length - 1]?.id;
-		const newBadge: Badge = {
-			id: (lastId ?? 0) + 1,
-			fields: [
-				{
-					content: "New",
-					color: BadgeColor.Simple,
-					width: 35
-				},
-				{
-					content: "Badge",
-					color: BadgeColor.Savannah,
-					width: 50
-				}
-			],
-			style: BadgeStyle.Plastic
+		const nBadge = {
+			...newBadge,
+			id: (lastId ?? 0) + 1
 		}
 
-		userProj.badges.push(newBadge);
+		userProj.badges.push(nBadge);
 		await this.dUsers.updateOne(
 			{ name: uId }, 
 			{ $set: { projects: userData } });
@@ -169,22 +133,6 @@ export class DataService {
 		project = project.replaceAll(" ", "-").replaceAll("/", "-");
 		if (user.projects.find((p: Project) => p.title === project)) return undefined;
 
-		const newBadge: Badge = {
-			id: 1,
-			fields: [
-				{
-					content: "Created",
-					color: BadgeColor.Simple,
-					width: 50
-				},
-				{
-					content: "Successfully",
-					color: BadgeColor.Savannah,
-					width: 90
-				}
-			],
-			style: BadgeStyle.Plastic
-		}
 		const newProject: Project = {
 			title: project,
 			badges: [ newBadge ]

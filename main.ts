@@ -24,33 +24,16 @@ const badger = new BadgeService();
 const data = new DataService();
 
 router
-	.get("/oauth/callback", async ctx => {
+	.get("/auth", async ctx => {
 		const params = ctx.request.url.searchParams;
-		const code = params.get("code") ?? "";
-		const state = params.get("state") ?? "";
+		const jwt = params.get("jwt") ?? "";
+		if (!jwt) ctx.throw(400);
 
-		if (!code || state != "pog") ctx.throw(400);
-
-		const nid = await auth.authorize(code, state);
-		const uuid = auth.getAuthorization(nid);
+		const uuid = await auth.verify(jwt);
 		await data.ensureUser(uuid);
 
-		ctx.cookies.set("token", nid, { maxAge: 864000, sameSite: "strict", path: "/" });
+		ctx.cookies.set("token", jwt, { maxAge: 864000, sameSite: "strict", path: "/" });
 		ctx.response.redirect("/dashboard");
-	})
-	.get("/oauth/login", ctx => {
-		const authed = auth.isAuthorized(ctx.cookies.get("token") ?? "");
-		if (ctx.cookies.get("token") && authed)
-			ctx.response.redirect("/dashboard");
-		else
-			ctx.response.redirect(auth.getAuthURL());
-	})
-	.get("/oauth/logout", ctx => {
-		ctx.cookies.set("token", "", { maxAge: 0 });
-		ctx.response.redirect("/");
-	})
-	.get("/oauth/manage", ctx => {
-		ctx.response.redirect(auth.getManagementURL());
 	})
 	.post("/api/badges/create", async ctx => {
 		const badge = await data.createBadge(ctx.state.userId, ctx.state.project);
@@ -119,7 +102,7 @@ router
 
 // Authentication middleware for API
 app.use(async (ctx, next) => {
-	const id = auth.getAuthorization(ctx.cookies.get("token") ?? "");
+	const id = await auth.verify(ctx.cookies.get("token") ?? "");
 	const project = ctx.request.url.searchParams.get("project") ?? "";
 	const badgeId = ctx.request.url.searchParams.get("id") ?? "";
 	ctx.state = {

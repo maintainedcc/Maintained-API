@@ -10,6 +10,8 @@ environment/environment.production.ts
 environment/environment.nightly.ts
 environment/environment.dev.ts
 
+services/auth/private.key.ts
+
 # Server dependencies
 services/badge/icon/icons
 

@@ -69,9 +69,7 @@ router
 		ctx.response.status = 204;
 	})
 	.get("/:userId/:project/:badgeId", async ctx => {
-		const userId = ctx.params.userId ?? "";
-		const project = ctx.params.project ?? "";
-		const badgeId = ctx.params.badgeId ?? "";
+		const { userId="", project="", badgeId="" } = ctx.params;
 		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));
 
 		if (badgeData) {
@@ -87,9 +85,7 @@ router
 		ctx.response.redirect("redirect.html");
 	})
 	.get("/:userId/:project/:badgeId/json", async ctx => {
-		const userId = ctx.params.userId ?? "";
-		const project = ctx.params.project ?? "";
-		const badgeId = ctx.params.badgeId ?? "";
+		const { userId="", project="", badgeId="" } = ctx.params;
 		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));
 
 		if (badgeData) {

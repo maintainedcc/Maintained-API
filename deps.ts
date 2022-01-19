@@ -1,6 +1,5 @@
 
-// Server environment config
-export { config } from "./environment/environment.dev.ts";
+import "https://deno.land/x/dotenv@v3.1.0/load.ts";
 
 // Oak (Server)
 export { Application, Router, send } from "https://deno.land/x/oak@v7.6.2/mod.ts";

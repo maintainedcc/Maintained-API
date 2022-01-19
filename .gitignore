@@ -9,6 +9,7 @@ docker-compose.yml
 environment/environment.production.ts
 environment/environment.nightly.ts
 environment/environment.dev.ts
+.env
 
 services/auth/private.key.ts
 

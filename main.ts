@@ -1,6 +1,5 @@
 
 import {
-	config,
 	Application,
 	Router,
 	send
@@ -119,5 +118,6 @@ app.use(async ctx => {
 	});
 });
 
-app.listen({ port: config.port });
-console.log(`Port: ${config.port}`);
+const port = parseInt(Deno.env.get("PORT") || "8002");
+app.listen({ port: port });
+console.log(`Port: ${port}`);

@@ -1,6 +1,5 @@
 
 import {
-	config,
 	MongoClient,
 	Database,
 	Collection
@@ -24,11 +23,11 @@ export class DataService {
 
 	constructor() {
 		const client = new MongoClient();
-		const mongoUser = `${config.database_user}:${config.database_pwd}`;
-		const mongoHost = `mongodb://${mongoUser}@${config.database_host}:27017`;
+		const mongoUser = `${Deno.env.get("DATABASE_USER")}:${Deno.env.get("DATABASE_PWD")}`;
+		const mongoHost = `mongodb://${mongoUser}@${Deno.env.get("DATABASE_HOST")}:27017`;
 		client.connect(`${mongoHost}/?authSource=admin&readPreference=primary&ssl=false`)
 			.then(() => {
-				this.db = client.database(config.database_name);
+				this.db = client.database(Deno.env.get("DATABASE_NAME"));
 				this.dUsers = this.db.collection("users");
 
 				this.dUsers.count().then((num: number) => {

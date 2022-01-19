@@ -5,13 +5,15 @@ import {
 	send
 } from "./deps.ts";
 import {
+	badgeV1,
+	projectV1,
+	userV1
+} from "./routes/v1/.mod.ts";
+import {
 	AuthService,
 	BadgeService,
 	DataService
 } from "./services/mod.ts";
-import {
-	Badge
-} from "./services/schema/mod.ts";
 
 // Oak server + middleware
 const app = new Application();
@@ -34,39 +36,6 @@ router
 		ctx.cookies.set("token", jwt, { maxAge: 864000, sameSite: "strict", path: "/" });
 		ctx.response.redirect("/dashboard");
 	})
-	.post("/api/badges/create", async ctx => {
-		const badge = await data.createBadge(ctx.state.userId, ctx.state.project);
-		if (!badge) ctx.throw(400);
-		else ctx.response.body = badge;
-	})
-	.post("/api/badges/update", async ctx => {
-		const badge = ctx.request.body({ type: "json" }) as unknown as Badge;
-		const upBadge = await data.updateBadge(ctx.state.userId, ctx.state.project, badge);
-		if (!upBadge) ctx.throw(400);
-		else ctx.response.body = upBadge;
-	})
-	.post("/api/badges/delete", async ctx => {
-		if (!ctx.state.project || !ctx.state.badgeId) ctx.throw(400);
-		await data.deleteBadge(ctx.state.userId, ctx.state.project, ctx.state.badgeId);
-		ctx.response.status = 204;
-	})
-	.post("/api/projects/create", async ctx => {
-		const project = await data.createProject(ctx.state.userId, ctx.state.project);
-		if (!project) ctx.throw(400);
-		ctx.response.body = JSON.stringify(project);
-	})
-	.post("/api/projects/delete", async ctx => {
-		if (!ctx.state.project) ctx.throw(400);
-		await data.deleteProject(ctx.state.userId, ctx.state.project);
-		ctx.response.status = 204;
-	})
-	.get("/api/user/data", async ctx => {
-		ctx.response.body = await data.getUserInfo(ctx.state.userId);
-	})
-	.post("/api/user/welcome", async ctx => {
-		await data.setUserWelcomed(ctx.state.userId);
-		ctx.response.status = 204;
-	})
 	.get("/:userId/:project/:badgeId", async ctx => {
 		const { userId="", project="", badgeId="" } = ctx.params;
 		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));
@@ -77,8 +46,7 @@ router
 			ctx.response.headers.set("Cache-Control", "no-store");
 			ctx.response.type = "image/svg+xml";
 		}
-		else
-			ctx.throw(404);
+		else ctx.throw(404);
 	})
 	.get("/:userId/:project/:badgeId/redirect", async ctx => {
 		ctx.response.redirect("redirect.html");
@@ -107,6 +75,13 @@ app.use(async (ctx, next) => {
 	};
 	await next();
 });
+
+app.use(badgeV1("/v1/badge", data).allowedMethods());
+app.use(badgeV1("/v1/badge", data).routes());
+app.use(projectV1("/v1/project", data).allowedMethods());
+app.use(projectV1("/v1/project", data).routes());
+app.use(userV1("/v1/user", data).allowedMethods());
+app.use(userV1("/v1/user", data).routes());
 
 app.use(router.allowedMethods());
 app.use(router.routes());

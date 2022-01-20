@@ -1,8 +1,6 @@
 
-export type { Badge } from "./badge.ts";
-export type { BadgeField } from "./badge-field.ts";
-export { BadgeStyle } from "./badge-style.ts";
-export { BadgeColor } from "./badge-color.ts";
+export type { Badge, BadgeField } from "./badge.ts";
+export { BadgeColor, BadgeStyle } from "./badge.ts";
 
 export type { Project } from "./project.ts";
 export type { Team } from "./team.ts";

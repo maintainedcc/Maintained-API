@@ -30,9 +30,8 @@ export class DataService {
 				this.db = client.database(Deno.env.get("DATABASE_NAME"));
 				this.dUsers = this.db.collection("users");
 
-				this.dUsers.count().then((num: number) => {
-					console.log(`Loaded DB with ${num} users.`);
-				});
+				this.dUsers.countDocuments()
+					.then(num => console.log(`Loaded ${num} users.`));
 			});
 	}
 

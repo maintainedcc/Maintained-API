@@ -65,7 +65,9 @@ router
 
 // Authentication middleware for API
 app.use(async (ctx, next) => {
-	const id = await auth.verify(ctx.cookies.get("token") ?? "");
+	let id = "";
+	if (await ctx.cookies.get("token"))
+		id = await auth.verify(await ctx.cookies.get("token") ?? "");
 	const project = ctx.request.url.searchParams.get("project") ?? "";
 	const badgeId = ctx.request.url.searchParams.get("id") ?? "";
 	ctx.state = {

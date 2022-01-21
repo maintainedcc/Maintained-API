@@ -1,8 +1,7 @@
 
 import {
 	Application,
-	Router,
-	send
+	Router
 } from "./deps.ts";
 import {
 	badgeV1,
@@ -87,13 +86,6 @@ app.use(userV1("/v1/user", data).routes());
 
 app.use(router.allowedMethods());
 app.use(router.routes());
-
-app.use(async ctx => {
-	await send(ctx, ctx.request.url.pathname, {
-		root: `${Deno.cwd()}/app`,
-		index: "index.html"
-	});
-});
 
 const port = parseInt(Deno.env.get("PORT") || "8002");
 app.listen({ port: port });

@@ -2,7 +2,7 @@
 import "https://deno.land/x/dotenv@v3.1.0/load.ts";
 
 // Oak (Server)
-export { Application, Router, send } from "https://deno.land/x/oak@v10.1.0/mod.ts";
+export { Application, Router } from "https://deno.land/x/oak@v10.1.0/mod.ts";
 
 // Service dependencies
 export { exists } from "https://deno.land/std@0.99.0/fs/exists.ts";

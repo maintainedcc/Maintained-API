@@ -32,12 +32,12 @@ export class BadgeService {
 		
 		// Compile badge partials
 		if (badge.fields)
-			badge.fields.forEach(async field => {
+			for await (const field of badge.fields) {
 				const part = await this.generatePartial(field, badge.style, totalWidth);
 				totalWidth += part.width;
 				innerContent += part.content;
 				accessibleTitle.push(part.title);
-			});
+			}
 
 		const aTitle = accessibleTitle.join(" ");
 		return this.generateWrapper(badge.style, innerContent, aTitle, totalWidth);

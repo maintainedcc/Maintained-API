@@ -33,7 +33,7 @@ router
 		await data.ensureUser(uuid);
 
 		ctx.cookies.set("token", jwt, { maxAge: 864000, sameSite: "strict", path: "/" });
-		ctx.response.redirect("/dashboard");
+		ctx.response.redirect(`/${uuid}/${uuid}/${1}`);
 	})
 	.get("/:userId/:project/:badgeId", async ctx => {
 		const { userId="", project="", badgeId="" } = ctx.params;

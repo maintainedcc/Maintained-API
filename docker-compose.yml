@@ -3,6 +3,16 @@
 version: '3.1'
 
 services:
+  identity:
+    image: maintained-id
+    ports:
+      - 8999:8999
+    environment:
+      PORT: 8999
+      CLIENT_ID: # GitHub client ID
+      CLIENT_SECRET: # GitHub client secret
+      REDIRECT_URI: http://localhost:8999/oauth/callback
+      REDIRECT_BASE: http://localhost:8002
   mongo:
     image: mongo
     restart: always

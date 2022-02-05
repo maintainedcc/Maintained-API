@@ -62,11 +62,19 @@ router
 		}
 	});
 
+// Access control
+app.use(async (ctx, next) => {
+	ctx.response.headers.set("Access-Control-Allow-Origin", (Deno.env.get("ALLOWED_ORIGIN") ?? "*"));
+	ctx.response.headers.set("Access-Control-Allow-Credentials", "true");
+	ctx.response.headers.set("Access-Control-Allow-Headers", "Authorization");
+	await next();
+});
+
 // Authentication middleware for API
 app.use(async (ctx, next) => {
 	let id = "";
-	if (await ctx.cookies.get("token"))
-		id = await auth.verify(await ctx.cookies.get("token") ?? "");
+	const authorization = ctx.request.headers.get("Authorization");
+	if (authorization) id = await auth.verify(authorization);
 	const project = ctx.request.url.searchParams.get("project") ?? "";
 	const badgeId = ctx.request.url.searchParams.get("id") ?? "";
 	ctx.state = {

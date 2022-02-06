@@ -3,5 +3,6 @@ import { Badge } from "./mod.ts";
 
 export interface Project {
 	title: string
-	badges: Badge[]
+	badges: Badge[],
+	defaultBadge: Badge
 }

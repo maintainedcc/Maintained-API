@@ -64,7 +64,7 @@ export class DataService {
 
 		const lastId = userProj.badges[userProj.badges.length - 1]?.id;
 		const nBadge = {
-			...newBadge,
+			...userProj.defaultBadge,
 			id: (lastId ?? 0) + 1
 		}
 
@@ -131,7 +131,8 @@ export class DataService {
 
 		const newProject: Project = {
 			title: project,
-			badges: [ newBadge ]
+			badges: [ newBadge ],
+			defaultBadge: newBadge
 		}
 
 		user.projects.push(newProject);

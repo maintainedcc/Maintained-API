@@ -28,7 +28,8 @@ export const newBadge: Badge = {
 export function generateNewUser(uuid: string): User {
 	const newProject: Project = {
 		title: uuid,
-		badges: [ newBadge ]
+		badges: [ newBadge ],
+		defaultBadge: newBadge
 	};
 	return {
 		name: uuid,

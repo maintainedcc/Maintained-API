@@ -11,7 +11,7 @@ export const badgeV1 = (prefix: string, data: DataService) => {
       else ctx.response.body = badge;
     })
     .post("/update", async ctx => {
-      const badge = ctx.request.body({ type: "json" }) as unknown as Badge;
+      const badge = (await ctx.request.body({ type: "json" }).value) as unknown as Badge;
       const upBadge = await data.updateBadge(ctx.state.userId, ctx.state.project, badge);
       if (!upBadge) ctx.throw(400);
       else ctx.response.body = upBadge;

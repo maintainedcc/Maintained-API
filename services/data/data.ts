@@ -35,11 +35,15 @@ export class DataService {
 			});
 	}
 
-	// Ensure a user exists
-	async ensureUser(uId: string): Promise<void> {
-		// Make sure the user doesn't exist already
-		if (await this.dUsers.findOne({ name: uId })) return;
-		else this.dUsers.insertOne(generateNewUser(uId));
+	// Ensure a user exists, creates one if not
+	// Return false if user exists, true if created
+	async ensureUser(uId: string): Promise<boolean> {
+		if (await this.dUsers.findOne({ name: uId }))
+			return false;
+		else {
+			this.dUsers.insertOne(generateNewUser(uId));
+			return true;
+		}
 	}
 
 	// Returns all of a user's data

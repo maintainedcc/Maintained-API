@@ -24,17 +24,6 @@ const badger = new BadgeService();
 const data = new DataService();
 
 router
-	.get("/auth", async ctx => {
-		const params = ctx.request.url.searchParams;
-		const jwt = params.get("jwt") ?? "";
-		if (!jwt) ctx.throw(400);
-
-		const uuid = await auth.verify(jwt);
-		await data.ensureUser(uuid);
-
-		ctx.cookies.set("token", jwt, { maxAge: 864000, sameSite: "strict", path: "/" });
-		ctx.response.redirect(`/${uuid}/${uuid}/${1}`);
-	})
 	.get("/:userId/:project/:badgeId", async ctx => {
 		const { userId="", project="", badgeId="" } = ctx.params;
 		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));
@@ -89,8 +78,8 @@ app.use(badgeV1("/v1/badge", data).allowedMethods());
 app.use(badgeV1("/v1/badge", data).routes());
 app.use(projectV1("/v1/project", data).allowedMethods());
 app.use(projectV1("/v1/project", data).routes());
-app.use(userV1("/v1/user", data).allowedMethods());
-app.use(userV1("/v1/user", data).routes());
+app.use(userV1("/v1/user", auth, data).allowedMethods());
+app.use(userV1("/v1/user", auth, data).routes());
 
 app.use(router.allowedMethods());
 app.use(router.routes());

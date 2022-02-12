@@ -1,18 +1,7 @@
 
-import {
-	Application,
-	Router
-} from "./deps.ts";
-import {
-	badgeV1,
-	projectV1,
-	userV1
-} from "./routes/v1/.mod.ts";
-import {
-	AuthService,
-	BadgeService,
-	DataService
-} from "./services/mod.ts";
+import { Application, Router } from "./deps.ts";
+import { badgeV1, projectV1, userV1 } from "./routes/v1/.mod.ts";
+import { AuthService, DataService } from "./services/mod.ts";
 
 // Oak server + middleware
 const app = new Application();
@@ -20,25 +9,9 @@ const router = new Router();
 
 // Maintained services
 const auth = new AuthService();
-const badger = new BadgeService();
 const data = new DataService();
 
 router
-	.get("/:userId/:project/:badgeId", async ctx => {
-		const { userId="", project="", badgeId="" } = ctx.params;
-		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));
-
-		if (badgeData) {
-			const badge = await badger.generate(badgeData);
-			ctx.response.body = badge;
-			ctx.response.headers.set("Cache-Control", "no-store");
-			ctx.response.type = "image/svg+xml";
-		}
-		else ctx.throw(404);
-	})
-	.get("/:userId/:project/:badgeId/redirect", async ctx => {
-		ctx.response.redirect("redirect.html");
-	})
 	.get("/:userId/:project/:badgeId/json", async ctx => {
 		const { userId="", project="", badgeId="" } = ctx.params;
 		const badgeData = await data.getBadge(userId, project, parseInt(badgeId));

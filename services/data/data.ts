@@ -24,7 +24,7 @@ export class DataService {
 	constructor() {
 		const client = new MongoClient();
 		const mongoUser = `${Deno.env.get("DATABASE_USER")}:${Deno.env.get("DATABASE_PWD")}`;
-		const mongoHost = `mongodb://${mongoUser}@${Deno.env.get("DATABASE_HOST")}:27017`;
+		const mongoHost = `mongodb://${mongoUser}@${Deno.env.get("DATABASE_HOST")}:${Deno.env.get("DATABASE_PORT")}`;
 		client.connect(`${mongoHost}/?authSource=admin&readPreference=primary&ssl=false`)
 			.then(() => {
 				this.db = client.database(Deno.env.get("DATABASE_NAME"));

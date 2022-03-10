@@ -1,149 +1,130 @@
-
 import { DataConnection } from "./db-connection.ts";
-import {
-	newBadge,
-	generateNewUser
-} from "./defaults.ts";
-import {
-	Badge,
-	User,
-	Project,
-	Team
-} from "../schema/mod.ts";
+import { newBadge } from "./defaults.ts";
+import { Badge, Project, Team } from "../schema/mod.ts";
 
 export class DataService {
-	// Assert non-null. Possible race condition, but unlikely because
-	// function calls are event-driven (non-issue after initialization).
-	private db!: DataConnection;
+  constructor(private db: DataConnection) {}
 
-	constructor() {
-		this.db = new DataConnection();
-	}
+  // Create a new default badge in a user's project and return it
+  async createBadge(uId: string, project: string): Promise<Badge | undefined> {
+    const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
+    const userProj = userData?.find((p: Project) => p.title === project);
+    if (!userProj) return undefined;
 
-	// Ensure a user exists, creates one if not
-	// Return false if user exists, true if created
-	async ensureUser(uId: string): Promise<boolean> {
-		if (await this.db.dUsers.findOne({ name: uId }))
-			return false;
-		else {
-			this.db.dUsers.insertOne(generateNewUser(uId));
-			return true;
-		}
-	}
+    const lastId = userProj.badges[userProj.badges.length - 1]?.id;
+    const nBadge = {
+      ...userProj.defaultBadge,
+      id: (lastId ?? 0) + 1,
+    };
 
-	// Returns all of a user's data
-	async getUserInfo(uId: string): Promise<User | undefined> {
-		const info = await this.db.dUsers.findOne({ name: uId });
-		if (info) return info;
-		else return undefined;
-	}
+    userProj.badges.push(nBadge);
+    await this.db.dUsers.updateOne(
+      { name: uId },
+      { $set: { projects: userData } },
+    );
+    return nBadge;
+  }
 
-	// Hide the new user experience for a user
-	async setUserWelcomed(uId: string): Promise<void> {
-		await this.db.dUsers.updateOne(
-			{ name: uId }, 
-			{ $set: { firstTime: false } });
-	}
+  // Delete a badge in a user's project from badge ID
+  async deleteBadge(uId: string, project: string, bId: number): Promise<void> {
+    const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
+    const userProj = userData?.find((p: Project) => p.title === project);
+    if (!userProj) return;
 
-	// Create a new default badge in a user's project and return it
-	async createBadge(uId: string, project: string): Promise<Badge | undefined> {
-		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
-		const userProj = userData?.find((p: Project) => p.title === project);
-		if (!userProj) return undefined;
+    const badgeIndex = userProj.badges.findIndex((b: Badge) => b.id === bId);
+    userProj.badges.splice(badgeIndex, 1);
+    await this.db.dUsers.updateOne(
+      { name: uId },
+      { $set: { projects: userData } },
+    );
+  }
 
-		const lastId = userProj.badges[userProj.badges.length - 1]?.id;
-		const nBadge = {
-			...userProj.defaultBadge,
-			id: (lastId ?? 0) + 1
-		}
+  // Get a badge based on username, project, and badge ID
+  async getBadge(
+    uId: string,
+    project: string,
+    bId: number,
+  ): Promise<Badge | undefined> {
+    const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
+    const userProj = userData?.find((p: Project) => p.title === project);
+    if (!userProj) return undefined;
 
-		userProj.badges.push(nBadge);
-		await this.db.dUsers.updateOne(
-			{ name: uId }, 
-			{ $set: { projects: userData } });
-		return nBadge;
-	}
+    const userBadge = userProj.badges.find((b: Badge) => b.id === bId);
+    if (!userBadge) return undefined;
+    else return userBadge;
+  }
 
-	// Delete a badge in a user's project from badge ID
-	async deleteBadge(uId: string, project: string, bId: number): Promise<void> {
-		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
-		const userProj = userData?.find((p: Project) => p.title === project);
-		if (!userProj) return;
+  // Updates all properties of a badge given username, project, and badge
+  async updateBadge(
+    uId: string,
+    project: string,
+    badge: Badge,
+  ): Promise<Badge | undefined> {
+    const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
+    const userProj = userData?.find((p: Project) => p.title === project);
+    if (!userProj) return undefined;
 
-		const badgeIndex = userProj.badges.findIndex((b: Badge) => b.id === bId);
-		userProj.badges.splice(badgeIndex, 1);
-		await this.db.dUsers.updateOne(
-			{ name: uId }, 
-			{ $set: { projects: userData } });
-	}
+    const userBadge = userProj.badges.find((b: Badge) => b.id === badge.id);
+    if (!userBadge) return undefined;
 
-	// Get a badge based on username, project, and badge ID
-	async getBadge(uId: string, project: string, bId: number): Promise<Badge | undefined> {
-		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
-		const userProj = userData?.find((p: Project) => p.title === project);
-		if (!userProj) return undefined;
+    // Explicitly set values to make sure vital info like
+    // badge ID, etc. does not get changed
+    userBadge.fields = badge.fields;
+    userBadge.style = badge.style;
+    userBadge.redirect = badge.redirect;
 
-		const userBadge = userProj.badges.find((b: Badge) => b.id === bId);
-		if (!userBadge) return undefined;
-		else return userBadge;
-	}
+    // Save changes
+    await this.db.dUsers.updateOne(
+      { name: uId },
+      { $set: { projects: userData } },
+    );
+    return userBadge;
+  }
 
-	// Updates all properties of a badge given username, project, and badge
-	async updateBadge(uId: string, project: string, badge: Badge): Promise<Badge | undefined> {
-		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
-		const userProj = userData?.find((p: Project) => p.title === project);
-		if (!userProj) return undefined;
+  // Create a new project with title and return it
+  async createProject(
+    uId: string,
+    project: string,
+  ): Promise<Project | undefined> {
+    const user = await this.db.dUsers.findOne({ name: uId });
+    if (!user || !project) return undefined;
 
-		const userBadge = userProj.badges.find((b: Badge) => b.id === badge.id);
-		if (!userBadge) return undefined;
+    project = project.replaceAll(" ", "-").replaceAll("/", "-");
+    if (user.projects.find((p: Project) => p.title === project)) {
+      return undefined;
+    }
 
-		// Explicitly set values to make sure vital info like
-		// badge ID, etc. does not get changed
-		userBadge.fields = badge.fields;
-		userBadge.style = badge.style;
-		userBadge.redirect = badge.redirect;
+    const newProject: Project = {
+      owner: uId,
+      associates: [],
+      title: project,
+      badges: [newBadge],
+      defaultBadge: newBadge,
+    };
 
-		// Save changes
-		await this.db.dUsers.updateOne(
-			{ name: uId },
-			{ $set: { projects: userData }});
-		return userBadge;
-	}
+    user.projects.push(newProject);
+    user.projects.sort((a: Project, b: Project) =>
+      ("" + a.title).localeCompare(b.title)
+    );
+    await this.db.dUsers.updateOne(
+      { name: uId },
+      { $set: { projects: user.projects } },
+    );
+    return newProject;
+  }
 
-	// Create a new project with title and return it
-	async createProject(uId: string, project: string): Promise<Project | undefined> {
-		const user = await this.db.dUsers.findOne({ name: uId });
-		if (!user || !project) return undefined;
+  // Delete a project based on username and project name
+  async deleteProject(uId: string, project: string): Promise<void> {
+    const user = await this.db.dUsers.findOne({ name: uId });
+    if (!user || !project) return;
 
-		project = project.replaceAll(" ", "-").replaceAll("/", "-");
-		if (user.projects.find((p: Project) => p.title === project)) return undefined;
-
-		const newProject: Project = {
-			owner: uId,
-			associates: [],
-			title: project,
-			badges: [ newBadge ],
-			defaultBadge: newBadge
-		}
-
-		user.projects.push(newProject);
-		user.projects.sort((a: Project, b: Project) => 
-			('' + a.title).localeCompare(b.title));
-		await this.db.dUsers.updateOne(
-			{ name: uId }, 
-			{ $set: { projects: user.projects } });
-		return newProject;
-	}
-
-	// Delete a project based on username and project name
-	async deleteProject(uId: string, project: string): Promise<void> {
-		const user = await this.db.dUsers.findOne({ name: uId });
-		if (!user || !project) return;
-
-		const projectIndex = user.projects.findIndex((p: Project) => p.title === project);
-		user.projects.splice(projectIndex, 1);
-		await this.db.dUsers.updateOne(
-			{ name: uId }, 
-			{ $set: { projects: user.projects } });
-	}
+    const projectIndex = user.projects.findIndex((p: Project) =>
+      p.title === project
+    );
+    user.projects.splice(projectIndex, 1);
+    await this.db.dUsers.updateOne(
+      { name: uId },
+      { $set: { projects: user.projects } },
+    );
+  }
 }

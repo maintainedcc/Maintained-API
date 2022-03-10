@@ -1,3 +1,2 @@
-
-export * from './auth/auth.ts';
-export * from './data/data.ts';
+export * from "./auth/auth.ts";
+export * from "./data/mod.ts";

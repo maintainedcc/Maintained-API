@@ -1,68 +1,53 @@
 
+import { DataConnection } from "./db-connection.ts";
 import {
-	MongoClient,
-	Database,
-	Collection
-} from "../../deps.ts";
+	newBadge,
+	generateNewUser
+} from "./defaults.ts";
 import {
 	Badge,
 	User,
 	Project,
 	Team
 } from "../schema/mod.ts";
-import {
-	newBadge,
-	generateNewUser
-} from "./defaults.ts";
 
 export class DataService {
 	// Assert non-null. Possible race condition, but unlikely because
 	// function calls are event-driven (non-issue after initialization).
-	private db!: Database;
-	private dUsers!: Collection<User>;
+	private db!: DataConnection;
 
 	constructor() {
-		const client = new MongoClient();
-		const mongoUser = `${Deno.env.get("DATABASE_USER")}:${Deno.env.get("DATABASE_PWD")}`;
-		const mongoHost = `mongodb://${mongoUser}@${Deno.env.get("DATABASE_HOST")}:${Deno.env.get("DATABASE_PORT")}`;
-		client.connect(`${mongoHost}/?authSource=admin&readPreference=primary&ssl=false`)
-			.then(() => {
-				this.db = client.database(Deno.env.get("DATABASE_NAME"));
-				this.dUsers = this.db.collection("users");
-
-				this.dUsers.countDocuments()
-					.then(num => console.log(`Loaded ${num} users.`));
-			});
+		this.db = new DataConnection();
 	}
 
 	// Ensure a user exists, creates one if not
 	// Return false if user exists, true if created
 	async ensureUser(uId: string): Promise<boolean> {
-		if (await this.dUsers.findOne({ name: uId }))
+		if (await this.db.dUsers.findOne({ name: uId }))
 			return false;
 		else {
-			this.dUsers.insertOne(generateNewUser(uId));
+			this.db.dUsers.insertOne(generateNewUser(uId));
 			return true;
 		}
 	}
 
 	// Returns all of a user's data
 	async getUserInfo(uId: string): Promise<User | undefined> {
-		const info = await this.dUsers.findOne({ name: uId });
+		const info = await this.db.dUsers.findOne({ name: uId });
 		if (info) return info;
 		else return undefined;
 	}
 
 	// Hide the new user experience for a user
 	async setUserWelcomed(uId: string): Promise<void> {
-		await this.dUsers.updateOne(
+		await this.db.dUsers.updateOne(
 			{ name: uId }, 
 			{ $set: { firstTime: false } });
 	}
 
 	// Create a new default badge in a user's project and return it
 	async createBadge(uId: string, project: string): Promise<Badge | undefined> {
-		const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
+		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
 		const userProj = userData?.find((p: Project) => p.title === project);
 		if (!userProj) return undefined;
 
@@ -73,7 +58,7 @@ export class DataService {
 		}
 
 		userProj.badges.push(nBadge);
-		await this.dUsers.updateOne(
+		await this.db.dUsers.updateOne(
 			{ name: uId }, 
 			{ $set: { projects: userData } });
 		return nBadge;
@@ -81,20 +66,20 @@ export class DataService {
 
 	// Delete a badge in a user's project from badge ID
 	async deleteBadge(uId: string, project: string, bId: number): Promise<void> {
-		const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
+		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
 		const userProj = userData?.find((p: Project) => p.title === project);
 		if (!userProj) return;
 
 		const badgeIndex = userProj.badges.findIndex((b: Badge) => b.id === bId);
 		userProj.badges.splice(badgeIndex, 1);
-		await this.dUsers.updateOne(
+		await this.db.dUsers.updateOne(
 			{ name: uId }, 
 			{ $set: { projects: userData } });
 	}
 
 	// Get a badge based on username, project, and badge ID
 	async getBadge(uId: string, project: string, bId: number): Promise<Badge | undefined> {
-		const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
+		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
 		const userProj = userData?.find((p: Project) => p.title === project);
 		if (!userProj) return undefined;
 
@@ -105,7 +90,7 @@ export class DataService {
 
 	// Updates all properties of a badge given username, project, and badge
 	async updateBadge(uId: string, project: string, badge: Badge): Promise<Badge | undefined> {
-		const userData = (await this.dUsers.findOne({ name: uId }))?.projects;
+		const userData = (await this.db.dUsers.findOne({ name: uId }))?.projects;
 		const userProj = userData?.find((p: Project) => p.title === project);
 		if (!userProj) return undefined;
 
@@ -119,7 +104,7 @@ export class DataService {
 		userBadge.redirect = badge.redirect;
 
 		// Save changes
-		await this.dUsers.updateOne(
+		await this.db.dUsers.updateOne(
 			{ name: uId },
 			{ $set: { projects: userData }});
 		return userBadge;
@@ -127,13 +112,15 @@ export class DataService {
 
 	// Create a new project with title and return it
 	async createProject(uId: string, project: string): Promise<Project | undefined> {
-		const user = await this.dUsers.findOne({ name: uId });
+		const user = await this.db.dUsers.findOne({ name: uId });
 		if (!user || !project) return undefined;
 
 		project = project.replaceAll(" ", "-").replaceAll("/", "-");
 		if (user.projects.find((p: Project) => p.title === project)) return undefined;
 
 		const newProject: Project = {
+			owner: uId,
+			associates: [],
 			title: project,
 			badges: [ newBadge ],
 			defaultBadge: newBadge
@@ -142,7 +129,7 @@ export class DataService {
 		user.projects.push(newProject);
 		user.projects.sort((a: Project, b: Project) => 
 			('' + a.title).localeCompare(b.title));
-		await this.dUsers.updateOne(
+		await this.db.dUsers.updateOne(
 			{ name: uId }, 
 			{ $set: { projects: user.projects } });
 		return newProject;
@@ -150,12 +137,12 @@ export class DataService {
 
 	// Delete a project based on username and project name
 	async deleteProject(uId: string, project: string): Promise<void> {
-		const user = await this.dUsers.findOne({ name: uId });
+		const user = await this.db.dUsers.findOne({ name: uId });
 		if (!user || !project) return;
 
 		const projectIndex = user.projects.findIndex((p: Project) => p.title === project);
 		user.projects.splice(projectIndex, 1);
-		await this.dUsers.updateOne(
+		await this.db.dUsers.updateOne(
 			{ name: uId }, 
 			{ $set: { projects: user.projects } });
 	}

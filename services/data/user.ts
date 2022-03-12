@@ -1,5 +1,5 @@
 import { DataConnection } from "./db-connection.ts";
-import { generateNewUser } from "./defaults.ts";
+import { generateNewProject, generateNewUser } from "./defaults.ts";
 import { Project, Team, User } from "../schema/mod.ts";
 
 export class UserService {
@@ -11,7 +11,8 @@ export class UserService {
     if (await this.db.dUsers.findOne({ name: uId })) {
       return false;
     } else {
-      this.db.dUsers.insertOne(generateNewUser(uId));
+      await this.db.dProjects.insertOne(generateNewProject(uId, uId));
+      await this.db.dUsers.insertOne(generateNewUser(uId));
       return true;
     }
   }

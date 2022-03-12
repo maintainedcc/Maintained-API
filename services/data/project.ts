@@ -1,5 +1,5 @@
 import { DataConnection } from "./db-connection.ts";
-import { newBadge } from "./defaults.ts";
+import { generateNewProject } from "./defaults.ts";
 import { Project } from "../schema/mod.ts";
 
 export class ProjectService {
@@ -20,13 +20,7 @@ export class ProjectService {
       return undefined;
     }
 
-    const newProject: Project = {
-      owner: uId,
-      associates: [],
-      title: project,
-      badges: [newBadge],
-      defaultBadge: newBadge,
-    };
+    const newProject = generateNewProject(uId, project);
     await this.db.dProjects.insertOne(newProject);
 
     return newProject;

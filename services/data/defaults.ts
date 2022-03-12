@@ -5,14 +5,21 @@ export const newBadge: Badge = {
   id: 1,
   fields: [
     {
-      content: "New",
+      content: ":github:Status",
       color: BadgeColor.Simple,
-      width: 35,
+      width: 36,
+      iconURI: "github",
     },
     {
-      content: "Badge",
+      content: "Maintained",
       color: BadgeColor.Savannah,
-      width: 50,
+      width: 61,
+    },
+    {
+      content: ":check-lg:",
+      color: BadgeColor.Subterranean,
+      width: 15,
+      iconURI: "check-lg",
     },
   ],
   style: BadgeStyle.Plastic,

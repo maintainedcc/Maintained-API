@@ -18,7 +18,7 @@ export const newBadge: Badge = {
     {
       content: ":check-lg:",
       color: BadgeColor.Subterranean,
-      width: 15,
+      width: 0,
       iconURI: "check-lg",
     },
   ],

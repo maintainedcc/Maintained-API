@@ -1,9 +1,10 @@
-
 import { Project } from "./project.ts";
 
 export interface User {
-	name: string // UUID
-	firstTime: boolean
-	projects: Project[]
-	teams?: string[]
+  name: string; // Github UUID
+  firstTime: boolean;
+  teams?: string[];
+
+  // Injected values
+  projects: Project[];
 }

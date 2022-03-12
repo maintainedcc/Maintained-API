@@ -4,6 +4,7 @@ import {
   AuthService,
   DataConnection,
   DataService,
+  ProjectService,
   UserService,
 } from "./services/mod.ts";
 
@@ -17,6 +18,7 @@ const db = new DataConnection();
 // Maintained services
 const auth = new AuthService();
 const data = new DataService(db);
+const proj = new ProjectService(db);
 const user = new UserService(db);
 
 router.get("/:userId/:project/:badgeId/json", async (ctx) => {
@@ -59,8 +61,8 @@ app.use(async (ctx, next) => {
 
 app.use(badgeV1("/v1/badge", data).allowedMethods());
 app.use(badgeV1("/v1/badge", data).routes());
-app.use(projectV1("/v1/project", data).allowedMethods());
-app.use(projectV1("/v1/project", data).routes());
+app.use(projectV1("/v1/project", proj).allowedMethods());
+app.use(projectV1("/v1/project", proj).routes());
 app.use(userV1("/v1/user", auth, user).allowedMethods());
 app.use(userV1("/v1/user", auth, user).routes());
 

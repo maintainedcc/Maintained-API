@@ -19,8 +19,13 @@ export class UserService {
   // Returns all of a user's data
   async getUserInfo(uId: string): Promise<User | undefined> {
     const info = await this.db.dUsers.findOne({ name: uId });
-    if (info) return info;
-    else return undefined;
+    if (!info) return undefined;
+
+    // Inject referenced data
+    info.projects = await this.db.dProjects.find({ owner: uId }).toArray();
+    info.projects.sort((a, b) => (a.title).localeCompare(b.title));
+
+    return info;
   }
 
   // Hide the new user experience for a user

@@ -12,8 +12,8 @@ export const userV1 = (
       const jwt = params.get("jwt") ?? "";
       if (!jwt) ctx.throw(400);
 
-      const uuid = await auth.verify(jwt);
-      const success = await data.ensureUser(uuid);
+      const { id, login } = await auth.verify(jwt);
+      const success = await data.ensureUser(id, login);
 
       ctx.response.status = success ? 200 : 400;
       ctx.response.body = {

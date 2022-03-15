@@ -35,10 +35,13 @@ export function generateNewProject(uuid: string, title: string): Project {
   };
 }
 
-export function generateNewUser(uuid: string): User {
+export function generateNewUser(id: string, login: string): User {
   return {
-    name: uuid,
+    id: id,
+    name: login,
     firstTime: true,
+    claims: [],
+    teams: [],
     projects: [],
   };
 }

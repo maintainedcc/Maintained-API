@@ -35,10 +35,8 @@ router.get("/:userId/:project/:badgeId/json", async (ctx) => {
 
 // Access control
 app.use(async (ctx, next) => {
-  ctx.response.headers.set(
-    "Access-Control-Allow-Origin",
-    Deno.env.get("ALLOWED_ORIGIN") ?? "*",
-  );
+  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
+  ctx.response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
   ctx.response.headers.set("Access-Control-Allow-Credentials", "true");
   ctx.response.headers.set("Access-Control-Allow-Headers", "Authorization");
   await next();
@@ -46,16 +44,18 @@ app.use(async (ctx, next) => {
 
 // Authentication middleware for API
 app.use(async (ctx, next) => {
-  let id = "";
   const authorization = ctx.request.headers.get("Authorization");
-  if (authorization) id = await auth.verify(authorization);
-  const project = ctx.request.url.searchParams.get("project") ?? "";
-  const badgeId = ctx.request.url.searchParams.get("id") ?? "";
-  ctx.state = {
-    userId: id,
-    project: project,
-    badgeId: badgeId,
-  };
+  if (authorization) {
+    const { id, login } = await auth.verify(authorization);
+    const project = ctx.request.url.searchParams.get("project") ?? "";
+    const badgeId = ctx.request.url.searchParams.get("id") ?? "";
+    ctx.state = {
+      uuid: id,
+      userId: login,
+      project: project,
+      badgeId: badgeId,
+    };
+  }
   await next();
 });
 

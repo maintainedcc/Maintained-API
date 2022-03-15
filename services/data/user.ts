@@ -7,12 +7,12 @@ export class UserService {
 
   // Ensure a user exists, creates one if not
   // Return false if user exists, true if created
-  async ensureUser(uId: string): Promise<boolean> {
-    if (await this.db.dUsers.findOne({ name: uId })) {
+  async ensureUser(id: string, login: string): Promise<boolean> {
+    if (await this.db.dUsers.findOne({ name: login })) {
       return false;
     } else {
-      await this.db.dProjects.insertOne(generateNewProject(uId, uId));
-      await this.db.dUsers.insertOne(generateNewUser(uId));
+      await this.db.dProjects.insertOne(generateNewProject(login, login));
+      await this.db.dUsers.insertOne(generateNewUser(id, login));
       return true;
     }
   }

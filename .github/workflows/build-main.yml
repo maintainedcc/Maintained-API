@@ -1,29 +1,26 @@
-name: Nightly
+name: Production
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v2
-      -
-        name: Login to Registry
+      - name: Login to Registry
         uses: docker/login-action@v1
         with:
           registry: registry.sdbagel.com
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
-      -
-        name: Build & Push
+      - name: Build & Push
         uses: docker/build-push-action@v2
         with:
           context: .
           push: true
           target: nightly
-          tags: registry.sdbagel.com/maintained-api:nightly
+          tags: registry.sdbagel.com/maintained-api
